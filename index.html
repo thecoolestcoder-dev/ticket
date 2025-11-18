@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Color Scanner Accounts</title>
+<style>
+body{
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  padding: 18px;
+  max-width: 900px;
+  margin: auto;
+  background: #f0f8ff; /* light blue background */
+  color: #2d3436;
+}
+h1{
+  margin-bottom:6px;
+  font-size: 28px;
+  text-align:center;
+  background: linear-gradient(to right, #fd79a8, #e17055, #ffeaa7);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+#app{
+  display:grid;
+  grid-template-columns:1fr 360px;
+  gap:16px;
+  align-items:start;
+}
+.card{
+  border-radius:12px;
+  padding:12px;
+  background: linear-gradient(135deg, #81ecec, #74b9ff, #a29bfe);
+  border: none;
+  box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+.card:hover{
+  transform: scale(1.02);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.25);
+}
+video{
+  width:100%;
+  border-radius:8px;
+  display:block;
+  background: linear-gradient(135deg, #ffeaa7, #fab1a0);
+}
+canvas{display:none;}
+button{
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid #888;
+  background: linear-gradient(135deg, #ffeaa7, #fab1a0, #55efc4);
+  cursor: pointer;
+  margin-right: 6px;
+  color:#2d3436;
+  font-weight:600;
+  transition: background 0.3s, color 0.3s;
+}
+button:hover{
+  background: linear-gradient(135deg, #55efc4, #74b9ff, #fab1a0);
+  color:white;
+}
+input[type="text"],input[type="number"]{
+  padding:8px;
+  border-radius:6px;
+  border:1px solid #ccc;
+  width:100%;
+  box-sizing:border-box;
+  margin-top:6px;
+  background: #dfe6e9;
+}
+label{display:block;margin-top:8px;font-size:13px;color:#333;}
+#detectedColorBox{
+  width:64px;
+  height:64px;
+  border-radius:8px;
+  border:2px solid #ff7675;
+  display:inline-block;
+  vertical-align:middle;
+  margin-left:8px;
+}
+.small{font-size:13px;color:#555;}
+.muted{color:#666;font-size:13px;}
+#videoContainer{position: relative; width: 100%;}
+#videoOverlay{
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100px;
+  height: 100px;
+  margin-left: -50px;
+  margin-top: -50px;
+  border: 3px dashed #ff6b81;
+  border-radius: 8px;
+  pointer-events: none;
+}
+@media (max-width:900px){#app{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<h1>Color Scanner Accounts</h1>
+<p class="muted">Students: scan the color inside the red square to see your account and balance. Teachers: log in to manage accounts.</p>
+<div id="app">
+<!-- Student Panel -->
+<div class="card">
+  <div id="videoContainer">
+    <video id="video" autoplay playsinline></video>
+    <div id="videoOverlay"></div>
+  </div>
+  <canvas id="canvas" width="320" height="240"></canvas>
+  <div style="margin-top:8px;display:flex;align-items:center">
+    <div>Detected:</div>
+    <div id="detectedColorBox"></div>
+    <div id="detectedRgb" class="small" style="margin-left:8px"></div>
+  </div>
+  <div style="margin-top:12px">
+    <button id="scanBtn">Scan Color</button>
+  </div>
+  <div id="studentResult" style="margin-top:12px">
+    <div class="muted">Account:</div>
+    <div id="accountName" style="font-size:20px;font-weight:600;margin-top:6px">—</div>
+    <div class="small" id="accountBalance">Balance: —</div>
+  </div>
+</div>
+
+<!-- Teacher Panel -->
+<div class="card">
+  <div style="display:flex;justify-content:space-between;align-items:center">
+    <div style="font-weight:700">Teacher Panel</div>
+    <div class="small">Logged in: <span id="teacherStatus">no</span></div>
+  </div>
+  <div id="teacherLogin" style="margin-top:12px">
+    <label>Enter teacher password</label>
+    <input id="passwordInput" type="text" placeholder="teacher code">
+    <div style="margin-top:6px">
+      <button id="loginBtn">Login</button>
+      <button id="logoutBtn" style="display:none">Logout</button>
+    </div>
+  </div>
+  <div id="teacherControls" style="display:none;margin-top:12px">
+    <div style="font-weight:600">Add Account</div>
+    <div style="margin-top:8px">
+      <button id="scanAddColorBtn">Scan Color to Add</button>
+      <div style="margin-top:8px">
+        <div class="small">Detected RGB: <span id="addDetectedRgb">—</span></div>
+        <div id="addColorPreview" style="width:48px;height:48px;border:1px solid #aaa;border-radius:6px;margin-top:6px"></div>
+      </div>
+      <label>Account name</label>
+      <input id="addName" type="text" placeholder="Name">
+      <label>Starting balance</label>
+      <input id="addBalance" type="number" placeholder="0" value="0">
+      <div style="margin-top:8px">
+        <button id="addAccountBtn">Save Account</button>
+      </div>
+    </div>
+    <hr>
+    <div style="font-weight:600">Edit or Remove</div>
+    <div class="small muted">Select an account from the list to edit or delete</div>
+    <div style="margin-top:8px">
+      <label>Selected account key</label>
+      <input id="selectedKey" type="text" readonly>
+      <label>New balance</label>
+      <input id="editBalance" type="number">
+      <div style="margin-top:8px">
+        <button id="saveEditBtn">Save Balance</button>
+        <button id="deleteAcctBtn" style="color:#b00;border-color:#b00;background:#fee">Delete Account</button>
+      </div>
+    </div>
+  </div>
+  <div style="margin-top:10px" class="muted small">if you are not a teacher then uhhhhh... dont go here.</div>
+</div>
+</div>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<script>
+// Your original JS code stays the same
+const firebaseConfig = { apiKey: "AIzaSyBa6EU1nJFXabh6WOqjMR_Pw_IH47xr2YI", authDomain: "ticket-bank.firebaseapp.com", databaseURL: "https://ticket-bank-default-rtdb.firebaseio.com/", projectId: "ticket-bank", storageBucket: "ticket-bank.firebasestorage.app", messagingSenderId: "369929934442", appId: "1:369929934442:web:4e32c04984a6446fbf1c13", measurementId: "G-TFDEKX0Y7Y" };
+const teacherPassword = "1846396";
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+const video = document.getElementById('video');
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const detectedBox = document.getElementById('detectedColorBox');
+const detectedRgbEl = document.getElementById('detectedRgb');
+const addDetectedRgb = document.getElementById('addDetectedRgb');
+const addColorPreview = document.getElementById('addColorPreview');
+const scanBtn = document.getElementById('scanBtn');
+const scanAddColorBtn = document.getElementById('scanAddColorBtn');
+const accountNameEl = document.getElementById('accountName');
+const accountBalanceEl = document.getElementById('accountBalance');
+const passwordInput = document.getElementById('passwordInput');
+const loginBtn = document.getElementById('loginBtn');
+const logoutBtn = document.getElementById('logoutBtn');
+const teacherStatus = document.getElementById('teacherStatus');
+const teacherControls = document.getElementById('teacherControls');
+const teacherLogin = document.getElementById('teacherLogin');
+const addName = document.getElementById('addName');
+const addBalance = document.getElementById('addBalance');
+const addAccountBtn = document.getElementById('addAccountBtn');
+const selectedKey = document.getElementById('selectedKey');
+const editBalance = document.getElementById('editBalance');
+const saveEditBtn = document.getElementById('saveEditBtn');
+const deleteAcctBtn = document.getElementById('deleteAcctBtn');
+
+let stream = null;
+let accounts = {};
+let loggedIn = false;
+
+// Start camera
+async function startCamera(){ if(stream) return; try{ stream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:"environment" }, audio:false }); video.srcObject = stream; await video.play(); }catch(err){ alert("Camera error: "+err.message); } }
+(async ()=>{ await startCamera(); })();
+
+// Color detection
+function sampleCenterRGB(){ const w=100,h=100,x=canvas.width/2-w/2,y=canvas.height/2-h/2; ctx.drawImage(video,0,0,canvas.width,canvas.height); const data=ctx.getImageData(x,y,w,h).data; let r=0,g=0,b=0,count=0; for(let i=0;i<data.length;i+=16){ r+=data[i]; g+=data[i+1]; b+=data[i+2]; count++; } return {r:Math.round(r/count), g:Math.round(g/count), b:Math.round(b/count)}; }
+function showDetected(rgb,targetEl=detectedRgbEl,box=detectedBox){ const s=`rgb(${rgb.r},${rgb.g},${rgb.b})`; box.style.background=s; targetEl.textContent=s; }
+function colorKey(rgb){ return `${rgb.r}_${rgb.g}_${rgb.b}`; }
+function findNearestAccount(rgb,maxDistance=120){ let best=null,bestDist=Infinity; for(const key in accounts){ const a=accounts[key].rgb; const d=Math.sqrt((a.r-rgb.r)**2+(a.g-rgb.g)**2+(a.b-rgb.b)**2); if(d<bestDist){ bestDist=d; best={key,data:accounts[key]}; } } return bestDist<=maxDistance?best:null; }
+
+// Student scan
+scanBtn.addEventListener('click',()=>{ const rgb=sampleCenterRGB(); showDetected(rgb); const found=findNearestAccount(rgb); if(found){ accountNameEl.textContent=found.data.name; accountBalanceEl.textContent=`Balance: ${found.data.balance}`; }else{ accountNameEl.textContent='No account found'; accountBalanceEl.textContent='Ask teacher to add this color.'; } });
+
+// Teacher login/logout
+loginBtn.addEventListener('click',()=>{ if(passwordInput.value.trim()===teacherPassword){ loggedIn=true; teacherStatus.textContent='yes'; teacherLogin.style.display='none'; teacherControls.style.display='block'; logoutBtn.style.display='inline-block'; }else alert('Wrong password'); });
+logoutBtn.addEventListener('click',()=>{ loggedIn=false; teacherStatus.textContent='no'; teacherLogin.style.display='block'; teacherControls.style.display='none'; logoutBtn.style.display='none'; });
+
+// Teacher scan
+scanAddColorBtn.addEventListener('click',()=>{ if(!loggedIn){ alert('Log in first'); return; } const rgb=sampleCenterRGB(); addDetectedRgb.textContent=`rgb(${rgb.r},${rgb.g},${rgb.b})`; addColorPreview.style.background=`rgb(${rgb.r},${rgb.g},${rgb.b})`; scanAddColorBtn.dataset.rgb=JSON.stringify(rgb); });
+
+// Add new account
+addAccountBtn.addEventListener('click',()=>{ if(!loggedIn){ alert('Teacher login required'); return; } const rgbData=scanAddColorBtn.dataset.rgb; if(!rgbData){ alert('Scan a color first'); return; } const rgb=JSON.parse(rgbData); const name=addName.value.trim()||'Unnamed'; const bal=parseInt(addBalance.value||'0',10); const key=colorKey(rgb); db.ref('accounts/'+key).set({name,balance:bal,rgb},err=>{ if(err) alert('Failed: '+err); else { addName.value=''; addBalance.value='0'; delete scanAddColorBtn.dataset.rgb; addDetectedRgb.textContent='—'; addColorPreview.style.background='transparent'; } }); });
+
+// Load accounts
+const accountsRef=db.ref('accounts'); accountsRef.on('value',snapshot=>{ accounts=snapshot.val()||{}; });
+</script>
+</body>
+</html>
