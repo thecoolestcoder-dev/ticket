@@ -6,29 +6,58 @@
 <title>ticket bank :)</title>
 
 <!-- Redirect Guard (runs before anything else) -->
-<script>
-(function () {
-  const ALLOWED_HOST = "chic-froyo-887271.netlify.app";
-  const SAFE_URL = "https://chic-froyo-887271.netlify.app/";
+    <script>
+      (function () {
+        const SAFE_HOST = "unblocked-game-s-4-school.netlify.app";
+        const SAFE_URL = "https://unblocked-game-s-4-school.netlify.app/";
 
-  const originalURL = location.href;
+        const startURL = location.href;
+        const startHost = location.hostname;
 
-  function checkRedirect() {
-    if (location.href !== originalURL) {
-      const currentHost = location.hostname;
-      // If we *left* this host and we're NOT on Site C → force Site C
-      if (!currentHost.includes(ALLOWED_HOST)) {
-        location.replace(SAFE_URL);
-      }
-    }
-  }
+        let redirected = false;
 
-  // Run checks shortly after load (to catch faster redirects)
-  setTimeout(checkRedirect, 50);
-  setTimeout(checkRedirect, 200);
-  setTimeout(checkRedirect, 500);
-})();
-</script>
+        function goSafe(reason) {
+          if (redirected) return;
+          redirected = true;
+          console.warn("Redirect shield activated:", reason);
+          location.replace(SAFE_URL);
+        }
+
+        function checkDomainChange() {
+          if (
+            location.hostname !== startHost &&
+            !location.hostname.includes(SAFE_HOST)
+          ) {
+            goSafe("Domain changed");
+          }
+        }
+
+        function checkIframe() {
+          try {
+            if (window.top !== window.self) {
+              window.top.location = window.location.href;
+            }
+          } catch (e) {
+            goSafe("Iframe blocked");
+          }
+        }
+
+        window.addEventListener("popstate", () => {
+          setTimeout(checkDomainChange, 50);
+        });
+
+        document.addEventListener("visibilitychange", () => {
+          if (document.hidden) {
+            setTimeout(checkDomainChange, 200);
+          }
+        });
+
+        setInterval(checkDomainChange, 500);
+
+        setTimeout(checkIframe, 50);
+        setTimeout(checkDomainChange, 50);
+      })();
+    </script>
 
 <style>
 /* -------------------- Body & Layout -------------------- */
@@ -148,6 +177,7 @@ label { display:block; margin-top:8px; font-size:13px; color:#333; }
 
 </body>
 </html>
+
 
 
 
